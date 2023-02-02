@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    kots.io/app-slug: app-kafka
+  labels:
+    kots.io/app-slug: app-kafka
+    kots.io/backup: velero
+  name: api-service-account
+  namespace: kafka
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    kots.io/app-slug: app-kafka
+  labels:
+    kots.io/app-slug: app-kafka
+    kots.io/backup: velero
+  name: api-cluster-role
+  namespace: kafka
+rules:
+- apiGroups:
+  - ""
+  - apps
+  - autoscaling
+  - batch
+  - extensions
+  - policy
+  - rbac.authorization.k8s.io
+  resources:
+  - pods
+  - componentstatuses
+  - configmaps
+  - daemonsets
+  - deployments
+  - events
+  - endpoints
+  - horizontalpodautoscalers
+  - ingress
+  - jobs
+  - limitranges
+  - namespaces
+  - nodes
+  - pods
+  - persistentvolumes
+  - persistentvolumeclaims
+  - resourcequotas
+  - replicasets
+  - replicationcontrollers
+  - serviceaccounts
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    kots.io/app-slug: app-kafka
+  labels:
+    kots.io/app-slug: app-kafka
+    kots.io/backup: velero
+  name: api-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: api-service-account
+  namespace: kafka
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJwcm94eS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtocFREZEZkVFIzZG5WSmFFbFBZbVJwV25JM1MxcDVWSEpLT2pKSWFVdzNSWFUwZDNaMVNXaEpUMkprYVZweU4wdGFlVlJ5U2c9PSJ9LCJyZWdpc3RyeS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtocFREZEZkVFIzZG5WSmFFbFBZbVJwV25JM1MxcDVWSEpLT2pKSWFVdzNSWFUwZDNaMVNXaEpUMkprYVZweU4wdGFlVlJ5U2c9PSJ9fX0=
+kind: Secret
+metadata:
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-9999"
+    kots.io/app-slug: app-kafka
+  creationTimestamp: null
+  labels:
+    kots.io/app-slug: app-kafka
+    kots.io/backup: velero
+  name: app-kafka-registry
+  namespace: default
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJwcm94eS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtocFREZEZkVFIzZG5WSmFFbFBZbVJwV25JM1MxcDVWSEpLT2pKSWFVdzNSWFUwZDNaMVNXaEpUMkprYVZweU4wdGFlVlJ5U2c9PSJ9LCJyZWdpc3RyeS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtocFREZEZkVFIzZG5WSmFFbFBZbVJwV25JM1MxcDVWSEpLT2pKSWFVdzNSWFUwZDNaMVNXaEpUMkprYVZweU4wdGFlVlJ5U2c9PSJ9fX0=
+kind: Secret
+metadata:
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-9999"
+    kots.io/app-slug: app-kafka
+  creationTimestamp: null
+  labels:
+    kots.io/app-slug: app-kafka
+    kots.io/backup: velero
+  name: kotsadm-replicated-registry
+  namespace: default
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+data:
+  password: OWZYUkVYVVJjNXhWQVp2QVdCQmZQNVV2ZTVvZlhRUVk=
+  postgres-password: OWZYUkVYVVJjNXhWQVp2QVdCQmZQNVV2ZTVvZlhRUVk=
+  replication-password: OWZYUkVYVVJjNXhWQVp2QVdCQmZQNVV2ZTVvZlhRUVk=
+kind: Secret
+metadata:
+  annotations:
+    kots.io/app-slug: app-kafka
+    kots.io/when: "true"
+  labels:
+    kots.io/app-slug: app-kafka
+    kots.io/backup: velero
+  name: postgres-secret
+  namespace: kafka
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kots.io/app-slug: app-kafka
+  labels:
+    app: app-kafka-producer
+    kots.io/app-slug: app-kafka
+    kots.io/backup: velero
+  name: app-kafka-producer
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-kafka-producer
+  template:
+    metadata:
+      annotations:
+        kots.io/app-slug: app-kafka
+      labels:
+        app: app-kafka-producer
+        kots.io/app-slug: app-kafka
+        kots.io/backup: velero
+    spec:
+      containers:
+      - command:
+        - sh
+        - -c
+        - i=1 ; while true; do dt=`date` ; echo Sending message $i ; echo $dt,$i,message
+          $i,$((1000+10*i)) | kafka-console-producer --topic topic-test --broker-list
+          $KAFKA_BROKER ; ((i++)) ; sleep 300;  done
+        env:
+        - name: KAFKA_BROKER
+          value: app-kafka.kafka.svc.cluster.local:9092
+        image: confluentinc/cp-kafka:7.3.0
+        imagePullPolicy: Always
+        name: kafka-client
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+      imagePullSecrets:
+      - name: app-kafka-registry
+      initContainers:
+      - args:
+        - wait
+        - pod/app-kafka-0
+        - --for=condition=ready
+        - --timeout=120s
+        command:
+        - kubectl
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        name: wait-for-kafka-ready-init
+      restartPolicy: Always
+      serviceAccountName: api-service-account
