@@ -693,7 +693,7 @@ metadata:
   name: helloreplicated
   namespace: hello
 spec:
-  replicas: 6
+  replicas: 4
   selector:
     matchLabels:
       app: hellorapp
