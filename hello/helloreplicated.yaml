@@ -1,0 +1,863 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: dashboard
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: admin-user
+  namespace: dashboard
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard
+  namespace: dashboard
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: api-service-account
+  namespace: hello
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    app: kurl-proxy-kotsadm
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    kots.io/kotsadm: "true"
+  name: kurl-proxy
+  namespace: kots
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard
+  namespace: dashboard
+rules:
+- apiGroups:
+  - ""
+  resourceNames:
+  - kubernetes-dashboard-key-holder
+  - kubernetes-dashboard-certs
+  - kubernetes-dashboard-csrf
+  resources:
+  - secrets
+  verbs:
+  - get
+  - update
+  - delete
+- apiGroups:
+  - ""
+  resourceNames:
+  - kubernetes-dashboard-settings
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - ""
+  resourceNames:
+  - heapster
+  - dashboard-metrics-scraper
+  resources:
+  - services
+  verbs:
+  - proxy
+- apiGroups:
+  - ""
+  resourceNames:
+  - heapster
+  - 'http:heapster:'
+  - 'https:heapster:'
+  - dashboard-metrics-scraper
+  - http:dashboard-metrics-scraper
+  resources:
+  - services/proxy
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    kots.io/kotsadm: "true"
+  name: secret-manager
+  namespace: kots
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - watch
+  - list
+  - create
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: api-cluster-role
+  namespace: hello
+rules:
+- apiGroups:
+  - ""
+  - apps
+  - autoscaling
+  - batch
+  - extensions
+  - policy
+  - rbac.authorization.k8s.io
+  resources:
+  - pods
+  - componentstatuses
+  - configmaps
+  - daemonsets
+  - deployments
+  - events
+  - endpoints
+  - horizontalpodautoscalers
+  - ingress
+  - jobs
+  - limitranges
+  - namespaces
+  - nodes
+  - pods
+  - persistentvolumes
+  - persistentvolumeclaims
+  - resourcequotas
+  - replicasets
+  - replicationcontrollers
+  - serviceaccounts
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard
+rules:
+- apiGroups:
+  - metrics.k8s.io
+  resources:
+  - pods
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard
+  namespace: dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubernetes-dashboard
+subjects:
+- kind: ServiceAccount
+  name: kubernetes-dashboard
+  namespace: dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    kots.io/kotsadm: "true"
+  name: kurl-proxy-tls-secrets
+  namespace: kots
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: secret-manager
+subjects:
+- kind: ServiceAccount
+  name: kurl-proxy
+  namespace: kots
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: api-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: api-service-account
+  namespace: hello
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubernetes-dashboard
+subjects:
+- kind: ServiceAccount
+  name: kubernetes-dashboard
+  namespace: dashboard
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard-settings
+  namespace: dashboard
+---
+apiVersion: v1
+data:
+  ENV_VAR_1: example 1
+  ENV_VAR_2: example 2
+kind: ConfigMap
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: app-configmap
+  namespace: hello
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard-certs
+  namespace: dashboard
+type: Opaque
+---
+apiVersion: v1
+data:
+  csrf: ""
+kind: Secret
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard-csrf
+  namespace: dashboard
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard-key-holder
+  namespace: dashboard
+type: Opaque
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJwcm94eS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtGR1FVbEdibHBJUWpOMk4wTjJSRWwxYTJwTGJFUkVka3RQT2pKQlJrRkpSbTVhU0VJemRqZERka1JKZFd0cVMyeEVSSFpMVHc9PSJ9LCJyZWdpc3RyeS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtGR1FVbEdibHBJUWpOMk4wTjJSRWwxYTJwTGJFUkVka3RQT2pKQlJrRkpSbTVhU0VJemRqZERka1JKZFd0cVMyeEVSSFpMVHc9PSJ9fX0=
+kind: Secret
+metadata:
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-9999"
+    kots.io/app-slug: helloreplicated
+  creationTimestamp: null
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: helloreplicated-registry
+  namespace: kots
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJwcm94eS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtGR1FVbEdibHBJUWpOMk4wTjJSRWwxYTJwTGJFUkVka3RQT2pKQlJrRkpSbTVhU0VJemRqZERka1JKZFd0cVMyeEVSSFpMVHc9PSJ9LCJyZWdpc3RyeS5yZXBsaWNhdGVkLmNvbSI6eyJhdXRoIjoiTWtGR1FVbEdibHBJUWpOMk4wTjJSRWwxYTJwTGJFUkVka3RQT2pKQlJrRkpSbTVhU0VJemRqZERka1JKZFd0cVMyeEVSSFpMVHc9PSJ9fX0=
+kind: Secret
+metadata:
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-9999"
+    kots.io/app-slug: helloreplicated
+  creationTimestamp: null
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kotsadm-replicated-registry
+  namespace: kots
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: dashboard-metrics-scraper
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: dashboard-metrics-scraper
+  namespace: dashboard
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+  selector:
+    k8s-app: dashboard-metrics-scraper
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: dashboard-np
+  namespace: dashboard
+spec:
+  ports:
+  - nodePort: 8000
+    port: 8443
+  selector:
+    k8s-app: kubernetes-dashboard
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard
+  namespace: dashboard
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    k8s-app: kubernetes-dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    app: hellorapp
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    tier: hellorweb
+  name: hello-np
+  namespace: hello
+spec:
+  ports:
+  - nodePort: 8083
+    port: 8080
+  selector:
+    app: hellorapp
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    app: hellorapp
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    tier: hellorweb
+  name: helloreplicated-cip
+  namespace: hello
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: hellorapp
+    tier: hellorweb
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    app: hellorapp
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    tier: hellorweb
+  name: helloreplicated-np
+  namespace: hello
+spec:
+  ports:
+  - nodePort: 8082
+    port: 8080
+  selector:
+    app: hellorapp
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    kots.io/kotsadm: "true"
+  name: kurl-proxy-kotsadm
+  namespace: kots
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - nodePort: 8800
+    port: 8800
+    protocol: TCP
+    targetPort: 8800
+  selector:
+    app: kurl-proxy-kotsadm
+  sessionAffinity: None
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: dashboard-metrics-scraper
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: dashboard-metrics-scraper
+  namespace: dashboard
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s-app: dashboard-metrics-scraper
+  template:
+    metadata:
+      annotations:
+        kots.io/app-slug: helloreplicated
+      labels:
+        k8s-app: dashboard-metrics-scraper
+        kots.io/app-slug: helloreplicated
+        kots.io/backup: velero
+    spec:
+      containers:
+      - image: kubernetesui/metrics-scraper:v1.0.8
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        name: dashboard-metrics-scraper
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 2001
+          runAsUser: 1001
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp-volume
+      imagePullSecrets:
+      - name: helloreplicated-registry
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: kubernetes-dashboard
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      volumes:
+      - emptyDir: {}
+        name: tmp-volume
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    k8s-app: kubernetes-dashboard
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: kubernetes-dashboard
+  namespace: dashboard
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s-app: kubernetes-dashboard
+  template:
+    metadata:
+      annotations:
+        kots.io/app-slug: helloreplicated
+      labels:
+        k8s-app: kubernetes-dashboard
+        kots.io/app-slug: helloreplicated
+        kots.io/backup: velero
+    spec:
+      containers:
+      - args:
+        - --auto-generate-certificates
+        - --namespace=dashboard
+        image: kubernetesui/dashboard:v2.7.0
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        name: kubernetes-dashboard
+        ports:
+        - containerPort: 8443
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 2001
+          runAsUser: 1001
+        volumeMounts:
+        - mountPath: /certs
+          name: kubernetes-dashboard-certs
+        - mountPath: /tmp
+          name: tmp-volume
+      imagePullSecrets:
+      - name: helloreplicated-registry
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: kubernetes-dashboard
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      volumes:
+      - name: kubernetes-dashboard-certs
+        secret:
+          secretName: kubernetes-dashboard-certs
+      - emptyDir: {}
+        name: tmp-volume
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+  labels:
+    app: hellorapp
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+  name: helloreplicated
+  namespace: hello
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: hellorapp
+      tier: hellorweb
+  template:
+    metadata:
+      annotations:
+        kots.io/app-slug: helloreplicated
+      labels:
+        app: hellorapp
+        kots.io/app-slug: helloreplicated
+        kots.io/backup: velero
+        tier: hellorweb
+    spec:
+      containers:
+      - env:
+        - name: GET_HOSTS_FROM
+          value: dns
+        envFrom:
+        - configMapRef:
+            name: app-configmap
+        image: grahamh/hello-replicated:3.0
+        name: helloreplicated
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      imagePullSecrets:
+      - name: helloreplicated-registry
+      initContainers:
+      - command:
+        - /bin/sh
+        - -ec
+        - "if [ -f \"/etc/block/upgrading\" ]\nthen \n  echo still upgrading, exiting\n
+          \ exit 1\nfi\necho No upgrade task in progress, app deployment not blocked.\n"
+        image: busybox
+        name: check-upgradecomplete-init
+        volumeMounts:
+        - mountPath: /etc/block
+          name: config
+      volumes:
+      - hostPath:
+          path: /etc/block/
+        name: config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    app: kurl-proxy-kotsadm
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    kots.io/kotsadm: "true"
+  name: kurl-proxy-kotsadm
+  namespace: kots
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: kurl-proxy-kotsadm
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kots.io/app-slug: helloreplicated
+      labels:
+        app: kurl-proxy-kotsadm
+        kots.io/app-slug: helloreplicated
+        kots.io/backup: velero
+        kots.io/kotsadm: "true"
+    spec:
+      containers:
+      - env:
+        - name: NODE_PORT
+          value: "8800"
+        - name: UPSTREAM_ORIGIN
+          value: http://kotsadm:3000
+        - name: DEX_UPSTREAM_ORIGIN
+          value: http://kotsadm-dex:5556
+        - name: TLS_SECRET_NAME
+          value: kotsadm-tls
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: kotsadm/kurl-proxy:v1.83.0
+        imagePullPolicy: IfNotPresent
+        name: proxy
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/kotsadm
+          name: kotsadm-config
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: helloreplicated-registry
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: kurl-proxy
+      serviceAccountName: kurl-proxy
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: kotsadm-application-metadata
+          optional: true
+        name: kotsadm-config
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kots.io/app-slug: helloreplicated
+    kots.io/when: "true"
+  labels:
+    app: hellorapp
+    kots.io/app-slug: helloreplicated
+    kots.io/backup: velero
+    tier: hellorweb
+  name: hello-ingress
+  namespace: hello
+spec:
+  ingressClassName: contour
+  rules:
+  - host: hello.buildsilab.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: helloreplicated-cip
+            port:
+              number: 8080
+        path: /
+        pathType: Prefix
+  - host: whale.buildsilab.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: helloreplicated-cip
+            port:
+              number: 8080
+        path: /
+        pathType: Prefix
